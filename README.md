@@ -4,9 +4,15 @@ A puzzle game inspired by the classic 2048, reimagined with prime numbers and cu
 
 The project focuses on algorithmic logic, grid-based movement, dynamic number generation, animations, and mobile-friendly interactions rather than traditional arithmetic merging.
 
-**Live demo:** https://codepen.io/guillhermm/pen/jErLeva
+**Play primes on:** https://guillhermm.github.io/primes/
+
+**Check out on Code Pen:** https://codepen.io/guillhermm/pen/jErLeva
 
 ![Primes Game preview](./preview.png)
+
+## Project history
+
+This project was originally developed in https://github.com/Guillhermm/web-ui-labs and was split into its own repository for clarity and long-term maintenance.
 
 ## Behavior
 
