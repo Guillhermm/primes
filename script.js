@@ -1,4 +1,44 @@
 /**
+ * Detects TWA
+ */
+const isRunningAsApp = () => {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    window.navigator.standalone === true // iOS fallback
+  );
+};
+
+const IS_APP = isRunningAsApp();
+
+if (IS_APP) {
+  document.body.classList.add('app-mode');
+}
+
+/**
+ * Mobile detection
+ */
+const isMobile = () => {
+  return window.matchMedia('(pointer: coarse)').matches;
+};
+
+/**
+ * Locks portrait orientation
+ */
+const lockPortrait = () => {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait').catch(() => {
+      // Silently fails (few browsers can't lock)
+      // No CSS fallback will be provided
+    });
+  }
+};
+
+if (IS_APP && isMobile()) {
+  lockPortrait();
+}
+
+/**
  * Constants
  */
 
