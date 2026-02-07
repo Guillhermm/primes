@@ -55,7 +55,68 @@
   --text-primary: rgba(255, 255, 255, .87);
   --text-secondary: rgba(255, 255, 255, .6);
 
+  --modal-text-primary: rgba(255, 255, 255, .87);
+  --modal-text-secondary: rgba(255, 255, 255, .6);
+
   --board-size: 4;
+}
+
+/* Light mode */
+body[data-theme="light"] {
+  /* Base */
+  --color-bg: #f6f7f9;
+  --color-bg-secondary: #5b4bd8;
+  --color-dark: #d3d3d3;
+
+  /* Board */
+  --color-board: #d3d3d3;
+  --color-cell: #818589;
+
+  /* Text and accents */
+  --text-primary: rgba(0, 0, 0, 0.88);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --modal-text-primary: rgba(255, 255, 255, 1);
+  --modal-text-secondary: rgba(255, 255, 255, 1);
+  --color-accent: #5b4bd8;
+  --color-accent-hover: #4a3ac5;
+  --color-on-accent: #ffffff;
+
+  /* Tiles */
+  --tile-text-dark: rgba(0, 0, 0, 0.88);
+  --tile-text-light: rgba(255, 255, 255, 0.95);
+
+  /* Low tiers (pastel) */
+  --tile-color-1:  #ede9fe;
+  --tile-color-2:  #ddd6fe;
+  --tile-color-3:  #c4b5fd;
+  --tile-color-4:  #a5b4fc;
+  --tile-color-5:  #93c5fd;
+
+  /* Mid tiers */
+  --tile-color-6:  #7dd3fc;
+  --tile-color-7:  #67e8f9;
+  --tile-color-8:  #5eead4;
+  --tile-color-9:  #6ee7b7;
+  --tile-color-10: #86efac;
+
+  /* High tiers (darker and serious) */
+  --tile-color-11: #4f46e5;
+  --tile-color-12: #4338ca;
+  --tile-color-13: #3730a3;
+  --tile-color-14: #1e40af;
+  --tile-color-15: #1e3a8a;
+
+  --tile-color-16: #991b1b;
+  --tile-color-17: #9a3412;
+  --tile-color-18: #92400e;
+  --tile-color-19: #065f46;
+  --tile-color-20: #064e3b;
+}
+
+body[data-theme="light"] .tile--tier-18,
+body[data-theme="light"] .tile--tier-19,
+body[data-theme="light"] .tile--tier-20 {
+  box-shadow: none;
 }
 
 html, body {
@@ -298,6 +359,7 @@ main {
   border: 1px solid var(--color-accent);
   color: var(--color-accent);
   border-radius: 0.5rem;
+  margin: .35rem;
   padding: 0.25rem 0.5rem;
   cursor: pointer;
   font-size: 1.5rem;
@@ -351,6 +413,7 @@ main {
 .btn-new-game svg {
   fill: none;
   width: 4rem;
+  height: 4rem;
   stroke: var(--color-accent);
   stroke-width: .5rem;
 }
@@ -369,8 +432,27 @@ main {
   }
 }
 
-/* Default button */
+.btn-theme {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.btn-theme svg {
+  width: 4rem;
+  height: 4rem;
+  fill: none;
+  padding: .35rem;
+  stroke: var(--color-accent);
+  stroke-width: 1.8;
+  transition: transform 0.2s ease, stroke 0.2s ease;
+}
+
+/* Default button */
 .btn {
   width: 100%;
   background: var(--color-accent);
@@ -402,7 +484,7 @@ main {
 
 .modal-card {
   background: rgba(48, 48, 48, .75);
-  color: var(--text-primary);
+  color: var(--modal-text-primary);
   padding: 1.5rem;
   border-radius: 0.75rem;
   animation: popIn 200ms ease-out;
@@ -507,7 +589,7 @@ main {
 
 .rules-indicator {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--modal-text-secondary);
 }
 
 /* Remove mobile tap highlight / shadow */
@@ -532,10 +614,6 @@ button:focus {
 
   .tile {
     font-size: 2.5rem;
-  }
-
-  .btn-new-game svg {
-    width: 5rem;
   }
 
   .btn.large {
