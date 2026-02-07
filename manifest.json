@@ -2,7 +2,7 @@
   "name": "Primes",
   "short_name": "Primes",
   "description": "A 2048-style puzzle game where tiles merge into prime numbers.",
-  "start_url": "./",
+  "start_url": "https://guillhermm.github.io/primes/",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#2a2a2a",
