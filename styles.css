@@ -510,6 +510,16 @@ main {
   color: var(--text-secondary);
 }
 
+/* Remove mobile tap highlight / shadow */
+button {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+button:focus {
+  outline: none;
+}
+
 /* Responsive */
 @media (min-width: 475px) {
   :root {
