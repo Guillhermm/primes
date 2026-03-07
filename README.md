@@ -35,3 +35,7 @@ This project was originally developed in https://github.com/Guillhermm/web-ui-la
 - This is a strategy-focused number puzzle rather than a traditional arithmetic game.
 - Merging rules are intentionally restrictive, encouraging players to think ahead and plan moves carefully instead of merging freely. The challenge comes from managing prime growth, board space, and merge opportunities.
 - The project is implemented entirely with vanilla technologies, prioritizing clarity, performance, and maintainability without external libraries or frameworks.
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file for details.
