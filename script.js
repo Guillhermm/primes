@@ -1,11 +1,11 @@
 /**
- * Detects TWA
+ * Detects TWA (Trusted Web Activity) / standalone PWA
  */
 const isRunningAsApp = () => {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.matchMedia('(display-mode: fullscreen)').matches ||
-    window.navigator.standalone === true // iOS fallback
+    window.navigator.standalone === true
   );
 };
 
@@ -28,8 +28,7 @@ const isMobile = () => {
 const lockPortrait = () => {
   if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('portrait').catch(() => {
-      // Silently fails (few browsers can't lock)
-      // No CSS fallback will be provided
+      // Silently fails — CSS landscape overlay acts as fallback
     });
   }
 };
@@ -39,7 +38,7 @@ if (IS_APP && isMobile()) {
 }
 
 /**
- * Constants
+ * SVG icon templates
  */
 
 const SUN_SVG = `
@@ -60,6 +59,27 @@ const MOON_SVG = `
   <path d="M21 12.79A9 9 0 1 1 11.21 3
            7 7 0 0 0 21 12.79z"/>
 `;
+
+const SOUND_ON_SVG = `
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+`;
+
+const SOUND_OFF_SVG = `
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+  <line x1="23" y1="9" x2="17" y2="15"/>
+  <line x1="17" y1="9" x2="23" y2="15"/>
+`;
+
+const PAUSE_SVG = `
+  <rect x="6" y="4" width="4" height="16"/>
+  <rect x="14" y="4" width="4" height="16"/>
+`;
+
+/**
+ * Constants
+ */
 
 const BOARD_SIZE = 4;
 const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
@@ -96,6 +116,8 @@ const movesValueEl = document.querySelector("[data-moves]");
 
 const newGameBtn = document.querySelector("[data-new-game]");
 const infoBtn = document.querySelector("[data-info]");
+const soundToggleBtn = document.querySelector("[data-sound-toggle]");
+const soundIcon = soundToggleBtn.querySelector("[data-icon]");
 
 const gameOverModal = document.querySelector("[data-game-over]");
 const finalScoreEl = document.querySelector("[data-final-score]");
@@ -104,6 +126,9 @@ const finalPrimeEl = document.querySelector("[data-final-prime]");
 const restartBtn = document.querySelector("[data-restart]");
 const closeGameOverBtn = document.querySelector("[data-close-game-over]");
 
+const pauseModal = document.querySelector("[data-pause]");
+const pauseResumeBtn = document.querySelector("[data-resume]");
+const pauseNewGameBtn = document.querySelector("[data-pause-new-game]");
 
 const rulesModal = document.querySelector("[data-rules]");
 const pages = [...document.querySelectorAll(".rules-page")];
@@ -118,7 +143,7 @@ let bestScore = 0;
 let bestPrime = 0;
 
 /**
- * Persistent stats
+ * Persistent state
  */
 
 const loadGameState = () => {
@@ -133,8 +158,8 @@ const loadGameState = () => {
     moves = state.moves || 0;
     score = state.score || 0;
 
-    // Restore primes in case new ones were generated
-    if (state.PRIMES && Array.isArray(state.PRIMES)) {
+    // Validate PRIMES before restoring to prevent corrupt saves causing infinite loops
+    if (state.PRIMES && Array.isArray(state.PRIMES) && state.PRIMES.length >= 2) {
       PRIMES.length = 0;
       PRIMES.push(...state.PRIMES);
     }
@@ -170,10 +195,83 @@ let board = Array(CELL_COUNT).fill(null);
 let moves = 0;
 let score = 0;
 let isAnimating = false;
+let isPaused = false;
 
 let mergedIndexes = new Set();
 let spawnedIndex = null;
 let currentMedal = "none";
+
+/**
+ * Sound system (Web Audio API, synthesized — no external files)
+ */
+
+const Sound = (() => {
+  let ctx = null;
+  let enabled = localStorage.getItem('soundEnabled') !== 'false';
+
+  const getCtx = () => {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window['webkitAudioContext'];
+      ctx = new AudioCtx();
+    }
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    return ctx;
+  };
+
+  const tone = (freq, type, duration, volume) => {
+    if (!enabled) return;
+    try {
+      const ac = getCtx();
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ac.currentTime);
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + duration);
+      osc.start(ac.currentTime);
+      osc.stop(ac.currentTime + duration);
+    } catch {
+      // Silently fail if Web Audio is unavailable
+    }
+  };
+
+  return {
+    move() {
+      tone(220, 'sine', 0.08, 0.12);
+    },
+    merge() {
+      tone(440, 'triangle', 0.12, 0.25);
+      setTimeout(() => tone(554, 'triangle', 0.10, 0.20), 60);
+    },
+    gameOver() {
+      tone(220, 'sawtooth', 0.20, 0.30);
+      setTimeout(() => tone(185, 'sawtooth', 0.25, 0.30), 180);
+      setTimeout(() => tone(147, 'sawtooth', 0.30, 0.30), 360);
+    },
+    setEnabled(on) {
+      enabled = on;
+      localStorage.setItem('soundEnabled', on ? 'true' : 'false');
+    },
+    isEnabled() {
+      return enabled;
+    }
+  };
+})();
+
+const applySoundIcon = () => {
+  soundIcon.innerHTML = Sound.isEnabled() ? SOUND_ON_SVG : SOUND_OFF_SVG;
+};
+
+soundToggleBtn.addEventListener('click', () => {
+  Sound.setEnabled(!Sound.isEnabled());
+  applySoundIcon();
+});
+
+applySoundIcon();
 
 /**
  * Helpers
@@ -197,19 +295,18 @@ const getNextTargetPrime = () => {
   const maxCurrent = highestPrimeOnBoard();
   const index = PRIMES.indexOf(maxCurrent);
 
-  // If prime not found (beyond base), find or generate
   const safeIndex = index !== -1
     ? index
     : PRIMES.findIndex(p => p > maxCurrent) - 1;
 
-  return ensurePrimeAtIndex(safeIndex + 1);
+  // Guard against edge case where safeIndex is negative (corrupted state)
+  return ensurePrimeAtIndex(Math.max(0, safeIndex + 1));
 };
 
 const getTierFromPrime = prime => {
   let index = PRIMES.indexOf(prime);
 
   if (index === -1) {
-    // Ensure primes up to this value exist
     while (PRIMES[PRIMES.length - 1] < prime) {
       PRIMES.push(generateNextPrime(PRIMES[PRIMES.length - 1]));
     }
@@ -269,19 +366,16 @@ const createTile = (value, index) => {
   tile.textContent = value;
   tile.dataset.value = value;
 
-  // Tier color logic
   const tier = getTierFromPrime(value);
   tile.classList.add(`tile--tier-${tier}`);
 
-  // Animation classes
   if (mergedIndexes.has(index)) tile.classList.add("tile--merge");
   if (index === spawnedIndex) tile.classList.add("tile--spawn");
 
-  // Dynamic font scaling
   const length = value.toString().length;
-  const maxFont = 2;   // rem for 1–2 chars
-  const minFont = 1;   // rem minimum font
-  const maxChars = 5;  // after this, font stays at minFont
+  const maxFont = 2;
+  const minFont = 1;
+  const maxChars = 5;
 
   const calculatedFont = Math.max(
     minFont,
@@ -428,8 +522,6 @@ const computeMove = direction => {
         mergedIndexes.add(targetIndex);
         score += merge.value;
 
-        progressedThisMove = true;
-
         for (let i = 0; i < merge.size; i++) {
           moveAnimations.push({
             from: sources[read + i],
@@ -462,13 +554,21 @@ const computeMove = direction => {
  * Perform move
  */
 
-const move = async direction => {
-  if (isAnimating || !gameOverModal.classList.contains("hidden")) return;
+const anyModalOpen = () =>
+  !gameOverModal.classList.contains("hidden") ||
+  !rulesModal.classList.contains("hidden") ||
+  !pauseModal.classList.contains("hidden");
 
-  progressedThisMove = false;
+const move = async direction => {
+  if (isAnimating || isPaused || anyModalOpen()) return;
 
   const { newBoard, moveAnimations } = computeMove(direction);
   if (boardsEqual(board, newBoard)) return;
+
+  // Play sound immediately (before animation) for responsive feel
+  const hadMerge = mergedIndexes.size > 0;
+  if (hadMerge) Sound.merge();
+  else Sound.move();
 
   isAnimating = true;
   moves += 1;
@@ -479,25 +579,37 @@ const move = async direction => {
   });
 
   setTimeout(() => {
-    board = newBoard;
-    spawnTile(getRandomBasePrime());
+    try {
+      board = newBoard;
+      spawnTile(getRandomBasePrime());
 
-    bestScore = Math.max(bestScore, score);
-    bestPrime = Math.max(bestPrime, highestPrimeOnBoard());
+      bestScore = Math.max(bestScore, score);
+      bestPrime = Math.max(bestPrime, highestPrimeOnBoard());
 
-    renderBoard();
-    updateMedal();
+      renderBoard();
+      updateMedal();
 
-    // Save current board state
-    saveGameState();
+      try {
+        saveGameState();
+      } catch {
+        // Storage quota exceeded — game continues without saving
+      }
+    } finally {
+      // Always reset animation lock, even if an error occurred above
+      isAnimating = false;
+      mergedIndexes.clear();
+      spawnedIndex = null;
+    }
 
-    isAnimating = false;
-    if (isGameOver()) showGameOver();
+    if (isGameOver()) {
+      Sound.gameOver();
+      showGameOver();
+    }
   }, MOVE_DURATION);
 };
 
 /**
- * Input
+ * Keyboard input
  */
 
 window.addEventListener("keydown", e => {
@@ -507,6 +619,16 @@ window.addEventListener("keydown", e => {
     ArrowUp: "up",
     ArrowDown: "down",
   };
+
+  if (e.key === "Escape") {
+    if (!pauseModal.classList.contains("hidden")) {
+      resumeGame();
+    } else if (!rulesModal.classList.contains("hidden")) {
+      rulesModal.classList.add("hidden");
+    }
+    return;
+  }
+
   if (map[e.key]) {
     e.preventDefault();
     move(map[e.key]);
@@ -520,12 +642,12 @@ window.addEventListener("keydown", e => {
 let touchStartX = 0;
 let touchStartY = 0;
 
-// Prevent native vertical scroll only if touch is on the board
+// Prevent native pull-to-refresh only when at top
 document.addEventListener('touchmove', function(e) {
   if (window.pageYOffset === 0 && e.changedTouches[0].pageY > 0) {
     e.preventDefault();
   }
-}, {passive: false});  // must be false to allow preventDefault
+}, { passive: false });
 
 boardElement.addEventListener("touchstart", e => {
   if (e.touches.length !== 1) return;
@@ -544,7 +666,6 @@ boardElement.addEventListener("touchend", e => {
   const dx = t.clientX - touchStartX;
   const dy = t.clientY - touchStartY;
 
-  // Ignore tiny accidental touches
   if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
 
   const direction = Math.abs(dx) > Math.abs(dy)
@@ -580,10 +701,62 @@ const showGameOver = () => {
   gameOverModal.classList.remove("hidden");
 };
 
-// Close game over modal without doing anything else.
 closeGameOverBtn.addEventListener("click", () =>
   gameOverModal.classList.add("hidden")
 );
+
+/**
+ * Pause system
+ */
+
+const pauseGame = () => {
+  if (isGameOver() || !gameOverModal.classList.contains("hidden")) return;
+  isPaused = true;
+  pauseModal.classList.remove("hidden");
+};
+
+const resumeGame = () => {
+  isPaused = false;
+  pauseModal.classList.add("hidden");
+};
+
+pauseResumeBtn.addEventListener("click", resumeGame);
+
+pauseNewGameBtn.addEventListener("click", () => {
+  resumeGame();
+  startGame();
+});
+
+/**
+ * Back button handler (Android hardware back / browser back)
+ *
+ * Strategy: push a dummy history state on init so the first back press
+ * is intercepted. Each interception re-pushes to keep the buffer alive.
+ */
+
+const handleBackButton = () => {
+  if (!rulesModal.classList.contains("hidden")) {
+    rulesModal.classList.add("hidden");
+    return;
+  }
+  if (!gameOverModal.classList.contains("hidden")) {
+    gameOverModal.classList.add("hidden");
+    return;
+  }
+  if (isPaused) {
+    resumeGame();
+    return;
+  }
+  pauseGame();
+};
+
+const initBackButtonHandler = () => {
+  history.pushState(null, "");
+  window.addEventListener("popstate", () => {
+    history.pushState(null, "");
+    handleBackButton();
+  });
+};
 
 /**
  * Rules modal
@@ -596,7 +769,6 @@ const updateRulesPage = () => {
     p.classList.toggle("active", i === currentPage)
   );
 
-  console.log('here');
   indicator.textContent = `${currentPage + 1} / ${pages.length}`;
   prevBtn.disabled = currentPage === 0;
   nextBtn.disabled = currentPage === pages.length - 1;
@@ -610,14 +782,12 @@ prevBtn.addEventListener("click", () => {
 });
 
 nextBtn.addEventListener("click", () => {
-  console.log('here');
   if (currentPage < pages.length - 1) {
     currentPage++;
     updateRulesPage();
   }
 });
 
-/* Reset when opening */
 infoBtn.addEventListener("click", () => {
   rulesModal.classList.remove("hidden");
   currentPage = 0;
@@ -661,25 +831,31 @@ applyTheme(savedTheme);
 
 const animateNewButton = () => {
   newGameBtn.classList.add("animate");
-
   setTimeout(() => {
     newGameBtn.classList.remove("animate");
-  }, [1000]);
-}
+  }, 1000);
+};
 
 const startGame = () => {
   board.fill(null);
   moves = 0;
   score = 0;
   currentMedal = "none";
+  isPaused = false;
 
   hudMedalEl.dataset.medal = "none";
   gameOverModal.classList.add("hidden");
+  pauseModal.classList.add("hidden");
 
   spawnTile(getRandomBasePrime());
   spawnTile(getRandomBasePrime());
   renderBoard();
-  saveGameState(); // Store initial state
+
+  try {
+    saveGameState();
+  } catch {
+    // Storage unavailable — game runs without persistence
+  }
 };
 
 newGameBtn.addEventListener("click", animateNewButton);
@@ -689,3 +865,5 @@ restartBtn.addEventListener("click", startGame);
 if (!loadGameState()) {
   startGame();
 }
+
+initBackButtonHandler();

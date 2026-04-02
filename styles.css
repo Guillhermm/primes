@@ -356,13 +356,15 @@ main {
 
 .btn-info {
   background: none;
-  border: 1px solid var(--color-accent);
+  border: .25rem solid var(--color-accent);
   color: var(--color-accent);
-  border-radius: 0.5rem;
+  border-radius: .5rem;
   margin: .35rem;
-  padding: 0.25rem 0.5rem;
   cursor: pointer;
   font-size: 1.5rem;
+  width: 3rem;
+  height: 3rem;
+  font-weight: 700;
 }
 
 .badge {
@@ -590,6 +592,104 @@ main {
 .rules-indicator {
   font-size: 0.875rem;
   color: var(--modal-text-secondary);
+}
+
+/* Pause button */
+.btn-pause {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-pause svg {
+  width: 4rem;
+  height: 4rem;
+  fill: var(--color-accent);
+  stroke: none;
+  padding: .45rem;
+  transition: fill 0.2s ease;
+}
+
+/* Sound toggle button */
+.btn-sound {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-sound svg {
+  width: 4rem;
+  height: 4rem;
+  fill: none;
+  padding: .35rem;
+  stroke: var(--color-accent);
+  stroke-width: 1.8;
+  transition: stroke 0.2s ease;
+}
+
+/* Pause modal */
+.pause-modal {
+  z-index: 150;
+}
+
+.pause-modal.hidden {
+  display: none;
+}
+
+.pause-card {
+  width: 90%;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+.pause-card h2 {
+  margin-bottom: .25rem;
+}
+
+/* Outline button variant */
+.btn.btn-outline {
+  background: transparent;
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn.btn-outline:hover {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+/* Landscape orientation overlay */
+.landscape-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .landscape-overlay {
+    display: flex;
+  }
 }
 
 /* Remove mobile tap highlight / shadow */

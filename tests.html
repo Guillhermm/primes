@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Primes — Tests</title>
+  <style>
+    body { font-family: monospace; background: #1a1a1a; color: #ccc; padding: 1.5rem; }
+    h1 { color: #d0bcff; margin-bottom: 1rem; }
+    h2 { color: #aaa; margin: 1.5rem 0 0.5rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .pass { color: #4caf50; }
+    .fail { color: #f44336; font-weight: bold; }
+    .detail { color: #888; font-size: 0.85rem; padding-left: 1.5rem; }
+    #summary { margin-top: 1.5rem; padding: 0.75rem 1rem; border-radius: 4px; font-size: 1rem; }
+    #summary.all-pass { background: #1b3a1b; color: #4caf50; }
+    #summary.has-fail { background: #3a1b1b; color: #f44336; }
+    /* Hidden game DOM required by script.js */
+    #game-dom { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Primes — Test Suite</h1>
+  <div id="output"></div>
+  <div id="summary"></div>
+
+  <!--
+    script.js requires these DOM elements to initialize without errors.
+    They are hidden and not used for display.
+  -->
+  <div id="game-dom">
+    <div class="game-board">
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+      <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    </div>
+    <span data-score></span>
+    <span data-score-best></span>
+    <span data-prime></span>
+    <span data-prime-best></span>
+    <span data-next></span>
+    <span data-moves></span>
+    <button data-new-game></button>
+    <button data-info></button>
+    <button data-pause-btn></button>
+    <button data-sound-toggle><svg viewBox="0 0 24 24" data-icon></svg></button>
+    <div data-game-over class="hidden modal">
+      <span data-final-score></span>
+      <span data-final-moves></span>
+      <span data-final-prime></span>
+      <button data-restart></button>
+      <button data-close-game-over></button>
+    </div>
+    <div data-pause class="hidden modal">
+      <button data-resume></button>
+      <button data-pause-new-game></button>
+    </div>
+    <div data-rules class="hidden modal">
+      <div class="rules-page active" data-page="0"></div>
+      <div class="rules-page" data-page="1"></div>
+      <div class="rules-page" data-page="2"></div>
+      <div class="rules-page" data-page="3"></div>
+      <button data-page-prev></button>
+      <span data-indicator></span>
+      <button data-page-next></button>
+      <button data-close-rules></button>
+    </div>
+    <div class="hud-medal" data-medal="none"></div>
+    <button data-theme-toggle><svg viewBox="0 0 24 24" data-icon></svg></button>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // ─── Test runner ──────────────────────────────────────────────────────────
+
+    const Runner = (() => {
+      let passed = 0, failed = 0;
+      const out = document.getElementById('output');
+
+      const log = html => { out.innerHTML += html; };
+
+      const assert = (label, condition, detail) => {
+        if (condition) {
+          passed++;
+          log(`<div class="pass">✓ ${label}</div>`);
+        } else {
+          failed++;
+          log(`<div class="fail">✗ ${label}</div>`);
+          if (detail) log(`<div class="detail">${detail}</div>`);
+        }
+      };
+
+      const eq = (label, actual, expected) => {
+        const a = JSON.stringify(actual);
+        const e = JSON.stringify(expected);
+        assert(label, a === e, `expected ${e}, got ${a}`);
+      };
+
+      const group = name => { log(`<h2>${name}</h2>`); };
+
+      const summarize = () => {
+        const total = passed + failed;
+        const el = document.getElementById('summary');
+        el.textContent = `${passed} / ${total} tests passed${failed ? ` — ${failed} failed` : ''}`;
+        el.className = failed ? 'has-fail' : 'all-pass';
+        document.title = `Tests: ${passed}✓ ${failed ? failed + '✗' : 'all pass'}`;
+      };
+
+      return { assert, eq, group, summarize };
+    })();
+
+    // ─── Helpers to set up game state for testing ─────────────────────────────
+
+    const resetState = () => {
+      board.fill(null);
+      moves = 0;
+      score = 0;
+      isPaused = false;
+      isAnimating = false;
+      mergedIndexes.clear();
+      spawnedIndex = null;
+      PRIMES.length = 0;
+      PRIMES.push(...BASE_PRIMES);
+    };
+
+    // Set board from a flat 16-element array (null = empty)
+    const setBoard = values => {
+      for (let i = 0; i < 16; i++) board[i] = values[i] ?? null;
+    };
+
+    // ─── Tests ────────────────────────────────────────────────────────────────
+
+    // isPrime
+    Runner.group('isPrime');
+    Runner.assert('2 is prime', isPrime(2));
+    Runner.assert('3 is prime', isPrime(3));
+    Runner.assert('5 is prime', isPrime(5));
+    Runner.assert('7 is prime', isPrime(7));
+    Runner.assert('11 is prime', isPrime(11));
+    Runner.assert('97 is prime', isPrime(97));
+    Runner.assert('101 is prime', isPrime(101));
+    Runner.assert('0 is not prime', !isPrime(0));
+    Runner.assert('1 is not prime', !isPrime(1));
+    Runner.assert('4 is not prime', !isPrime(4));
+    Runner.assert('6 is not prime', !isPrime(6));
+    Runner.assert('9 is not prime', !isPrime(9));
+    Runner.assert('15 is not prime', !isPrime(15));
+    Runner.assert('100 is not prime', !isPrime(100));
+    Runner.assert('negative is not prime', !isPrime(-7));
+
+    // generateNextPrime — only call with odd primes >= 3
+    Runner.group('generateNextPrime');
+    Runner.eq('next after 3 → 5', generateNextPrime(3), 5);
+    Runner.eq('next after 5 → 7', generateNextPrime(5), 7);
+    Runner.eq('next after 7 → 11', generateNextPrime(7), 11);
+    Runner.eq('next after 89 → 97', generateNextPrime(89), 97);
+    Runner.eq('next after 97 → 101', generateNextPrime(97), 101);
+    Runner.assert('result is always prime', isPrime(generateNextPrime(41)));
+
+    // boardsEqual
+    Runner.group('boardsEqual');
+    Runner.assert('identical boards', boardsEqual([2, 3, null, null], [2, 3, null, null]));
+    Runner.assert('different values', !boardsEqual([2, 3, null, null], [2, 5, null, null]));
+    Runner.assert('null vs value', !boardsEqual([null, 3, null, null], [2, 3, null, null]));
+    Runner.assert('empty boards equal', boardsEqual(Array(16).fill(null), Array(16).fill(null)));
+
+    // medalFromPrime
+    Runner.group('medalFromPrime');
+    Runner.eq('prime 2 → none', medalFromPrime(2), 'none');
+    Runner.eq('prime 43 → none (below bronze)', medalFromPrime(43), 'none');
+    Runner.eq('prime 47 → bronze', medalFromPrime(47), 'bronze');
+    Runner.eq('prime 53 → bronze', medalFromPrime(53), 'bronze');
+    Runner.eq('prime 71 → bronze', medalFromPrime(71), 'bronze');
+    Runner.eq('prime 73 → silver', medalFromPrime(73), 'silver');
+    Runner.eq('prime 83 → silver', medalFromPrime(83), 'silver');
+    Runner.eq('prime 89 → silver', medalFromPrime(89), 'silver');
+    Runner.eq('prime 97 → gold', medalFromPrime(97), 'gold');
+    Runner.eq('prime 101 → gold (beyond base)', medalFromPrime(101), 'gold');
+
+    // bestMerge — requires board state for isValidPrime
+    Runner.group('bestMerge');
+
+    // Board with highest = 3, so next target = 5
+    resetState();
+    setBoard([3, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+    Runner.eq('[2,3] → {size:2, value:5}', bestMerge([2, 3]), { size: 2, value: 5 });
+    Runner.eq('[3,2] → {size:2, value:5}', bestMerge([3, 2]), { size: 2, value: 5 });
+    Runner.eq('[2,2] → null (4 not prime)', bestMerge([2, 2]), null);
+    Runner.eq('[3,3] → null (6 not prime)', bestMerge([3, 3]), null);
+
+    // Board with highest = 5, next target = 7
+    resetState();
+    setBoard([5, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+    Runner.eq('[2,5] → {size:2, value:7}', bestMerge([2, 5]), { size: 2, value: 7 });
+    Runner.eq('[5,2] → {size:2, value:7}', bestMerge([5, 2]), { size: 2, value: 7 });
+
+    // Board with highest = 7, next target = 11
+    // 2+2+7=11 (3-tile, prime, <=11) vs 2+2=4 (not prime) — should prefer 3-tile
+    resetState();
+    setBoard([7, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+    Runner.eq('[2,2,7] → {size:3, value:11} (3-tile beats 2-tile)', bestMerge([2, 2, 7]), { size: 3, value: 11 });
+
+    // [2,3,2]: 2+3=5, 2+3+2=7. Both valid when next>=7. Should prefer 3-tile (value 7 > 5)
+    resetState();
+    setBoard([5, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+    Runner.eq('[2,3,2] → {size:3, value:7} (higher value wins)', bestMerge([2, 3, 2]), { size: 3, value: 7 });
+
+    // Single tile → null (can't merge)
+    resetState();
+    setBoard([3, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]);
+    Runner.eq('[3] → null (single tile)', bestMerge([3]), null);
+
+    // isGameOver
+    Runner.group('isGameOver');
+
+    resetState();
+    Runner.assert('empty board → not over', !isGameOver());
+
+    resetState();
+    setBoard([2, null, 3, null, 3, null, 2, null, 3, null, 2, null, 3, null, 2, null]);
+    Runner.assert('board with empty cells → not over', !isGameOver());
+
+    // Full board with valid merge possible (2+3=5 along row)
+    resetState();
+    setBoard([2, 3, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59]);
+    // next target > 59, so 2+3=5 might be valid. Actually 2+3=5 <= next target if next > 5
+    // board highest = 59, next = 61. 2+3=5 which is prime and <=61 → merge exists → not game over
+    Runner.assert('full board with valid 2+3=5 merge → not over', !isGameOver());
+
+    // Full board, all large primes with no valid adjacent merge
+    // Use tiles where no pair sums to a valid prime
+    resetState();
+    // All tiles are 47, highest on board = 47, next = 53.
+    // 47+47 = 94, not prime → no 2-tile merge. 47+47+47 = 141, not prime → no 3-tile merge.
+    setBoard([47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47, 47]);
+    Runner.assert('full board, no valid merges → game over', isGameOver());
+
+    // computeMove
+    Runner.group('computeMove');
+
+    // Simple left-compress: [null, 3, null, 7] → [3, 7, null, null]
+    // 3+7=10 is not prime → no merge, pure slide
+    resetState();
+    setBoard([
+      null, 3, null, 7,
+      null, null, null, null,
+      null, null, null, null,
+      null, null, null, null
+    ]);
+    const beforeScore = score;
+    const { newBoard: compLeft } = computeMove('left');
+    Runner.eq('left compress row 1 (no merge)', [compLeft[0], compLeft[1], compLeft[2], compLeft[3]], [3, 7, null, null]);
+    Runner.eq('score unchanged (no merge)', score, beforeScore);
+
+    // Left merge: [2, 3, null, null] → [5, null, null, null], score += 5
+    resetState();
+    setBoard([
+      2, 3, null, null,
+      null, null, null, null,
+      null, null, null, null,
+      null, null, null, null
+    ]);
+    const scoreBeforeMerge = score;
+    const { newBoard: compMerge } = computeMove('left');
+    Runner.eq('left merge [2,3] → [5]', [compMerge[0], compMerge[1], compMerge[2], compMerge[3]], [5, null, null, null]);
+    Runner.eq('score += 5 after merge', score, scoreBeforeMerge + 5);
+
+    // Right compress: [2, null, null, null] → [null, null, null, 2]
+    resetState();
+    setBoard([
+      2, null, null, null,
+      null, null, null, null,
+      null, null, null, null,
+      null, null, null, null
+    ]);
+    const { newBoard: compRight } = computeMove('right');
+    Runner.eq('right compress single tile', [compRight[0], compRight[1], compRight[2], compRight[3]], [null, null, null, 2]);
+
+    // Up compress: column 0 = [null, 3, null, 7] → [3, 7, null, null]
+    // 3+7=10 is not prime → no merge, pure slide
+    resetState();
+    setBoard([
+      null, null, null, null,
+      3,    null, null, null,
+      null, null, null, null,
+      7,    null, null, null
+    ]);
+    const { newBoard: compUp } = computeMove('up');
+    Runner.eq('up compress column 0 (no merge)', [compUp[0], compUp[4], compUp[8], compUp[12]], [3, 7, null, null]);
+
+    // Down compress: column 0 = [3, null, null, 7] → [null, null, 3, 7]
+    // 3+7=10 is not prime → no merge, pure slide
+    resetState();
+    setBoard([
+      3,    null, null, null,
+      null, null, null, null,
+      null, null, null, null,
+      7,    null, null, null
+    ]);
+    const { newBoard: compDown } = computeMove('down');
+    Runner.eq('down compress column 0 (no merge)', [compDown[0], compDown[4], compDown[8], compDown[12]], [null, null, 3, 7]);
+
+    // 3-tile merge: [2, 2, 7, null] with next target = 11 → [11, null, null, null]
+    resetState();
+    setBoard([
+      7, null, null, null,  // highest = 7, next = 11
+      null, null, null, null,
+      null, null, null, null,
+      null, null, null, null
+    ]);
+    // Temporarily set board to include 7 then trigger the move
+    setBoard([
+      2, 2, 7, null,
+      null, null, null, null,
+      null, null, null, null,
+      null, null, null, null
+    ]);
+    // Manually set a board where highest is 7 but we need to set up for computation
+    // Reset PRIMES and set board correctly for this test
+    PRIMES.length = 0;
+    PRIMES.push(...BASE_PRIMES);
+    // board highest is now 7 (index 3 in BASE_PRIMES), next = BASE_PRIMES[4] = 11
+    const scoreBefore3 = score;
+    const { newBoard: comp3 } = computeMove('left');
+    Runner.eq('3-tile merge [2,2,7] → [11]', [comp3[0], comp3[1], comp3[2], comp3[3]], [11, null, null, null]);
+    Runner.eq('score += 11 after 3-tile merge', score, scoreBefore3 + 11);
+
+    // ─── Summary ──────────────────────────────────────────────────────────────
+    Runner.summarize();
+  </script>
+</body>
+</html>
