@@ -43,6 +43,7 @@ jobs:
             --exclude='.git' \
             --exclude='.github' \
             --exclude='build' \
+            --exclude='screenshots' \
             --exclude='tests' \
             --exclude='tests.html' \
             . _site/
