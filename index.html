@@ -33,6 +33,31 @@
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <script src="script.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Primes",
+    "alternateName": "Primes Game",
+    "description": "A free browser puzzle game inspired by 2048. Merge tiles whose sum forms a prime number and try to reach the highest prime possible.",
+    "url": "https://guillhermm.github.io/primes/",
+    "image": "https://guillhermm.github.io/primes/preview.png",
+    "genre": ["Puzzle", "Strategy"],
+    "gamePlatform": ["Web Browser", "Android"],
+    "applicationCategory": "Game",
+    "operatingSystem": ["Web", "Android 5.0+"],
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Guilherme Zeni",
+      "url": "https://github.com/Guillhermm"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -100,7 +125,7 @@
         </button>
       </div>
       <div class="control-item">
-        <button class="btn-theme" data-theme-toggle aria-label="Toggle theme">
+        <button class="btn-theme" title="Toggle theme" data-theme-toggle aria-label="Toggle theme">
           <svg viewBox="0 0 24 24" data-icon>
             <!-- SUN (default) -->
             <circle cx="12" cy="12" r="5"/>
@@ -194,9 +219,11 @@
     </div>
   </div>
 
-  <!-- Landscape orientation overlay (CSS shows this only when needed) -->
+  <!-- Landscape orientation overlay (fades in via CSS media query) -->
   <div class="landscape-overlay" aria-hidden="true">
-    <p>Rotate your device to portrait mode to play</p>
+    <p class="landscape-title">PRIMES</p>
+    <p>Please rotate your device to portrait mode to play.</p>
+    <p class="landscape-note">Your device does not support automatic screen rotation lock.</p>
   </div>
 </body>
 

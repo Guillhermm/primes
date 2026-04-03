@@ -198,7 +198,7 @@ let isAnimating = false;
 let isPaused = false;
 
 let mergedIndexes = new Set();
-let spawnedIndex = null;
+let spawnedIndexes = new Set();
 let currentMedal = "none";
 
 /**
@@ -370,7 +370,7 @@ const createTile = (value, index) => {
   tile.classList.add(`tile--tier-${tier}`);
 
   if (mergedIndexes.has(index)) tile.classList.add("tile--merge");
-  if (index === spawnedIndex) tile.classList.add("tile--spawn");
+  if (spawnedIndexes.has(index)) tile.classList.add("tile--spawn");
 
   const length = value.toString().length;
   const maxFont = 2;
@@ -430,7 +430,7 @@ const renderBoard = () => {
   primeBestEl.textContent = bestPrime;
 
   mergedIndexes.clear();
-  spawnedIndex = null;
+  spawnedIndexes.clear();
 };
 
 /**
@@ -444,8 +444,9 @@ const spawnTile = value => {
   const empty = getEmptyIndexes();
   if (!empty.length) return false;
 
-  spawnedIndex = empty[Math.floor(Math.random() * empty.length)];
-  board[spawnedIndex] = value;
+  const idx = empty[Math.floor(Math.random() * empty.length)];
+  spawnedIndexes.add(idx);
+  board[idx] = value;
   return true;
 };
 
@@ -598,7 +599,7 @@ const move = async direction => {
       // Always reset animation lock, even if an error occurred above
       isAnimating = false;
       mergedIndexes.clear();
-      spawnedIndex = null;
+      spawnedIndexes.clear();
     }
 
     if (isGameOver()) {
